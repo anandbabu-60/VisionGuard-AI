@@ -579,11 +579,18 @@ with col_cam_view:
             with cfg2:
                 loiter_limit = st.slider("Loitering Dwell-Time Alarm (Seconds):", min_value=5, max_value=60, value=15)
                 enable_audio_siren = st.checkbox("🔊 Enable Audible Siren on Security Breach", value=True, help="Synthesizes an immediate browser siren tone when a breach is detected")
-                video_source_type = st.radio("Video Source:", options=["Webcam (Index 0)", "RTSP IP Security Camera", "Custom Video File Path"], horizontal=True)
+                video_source_type = st.radio(
+                    "Video Source:",
+                    options=["Webcam (Index 0)", "Demo Security Footage", "RTSP IP Security Camera", "Custom Video File Path"],
+                    horizontal=True,
+                    help="Select camera input. Note: On Streamlit Cloud, use 'Demo Security Footage' or 'RTSP' since cloud servers do not have physical USB webcams."
+                )
                 if "RTSP" in video_source_type:
                     custom_video_path = st.text_input("RTSP Stream URL:", value="rtsp://admin:12345@192.168.1.100:554/stream1", help="Enter RTSP camera stream URL from Hikvision, Dahua, Axis or any IP camera")
+                elif "Demo" in video_source_type:
+                    custom_video_path = "assets/sample_surveillance.mp4"
                 else:
-                    custom_video_path = st.text_input("Video File Path (if selected):", value="data/test_video.mp4", help="Local path to .mp4 or .avi file")
+                    custom_video_path = st.text_input("Video File Path (if selected):", value="assets/sample_surveillance.mp4", help="Local path to .mp4 or .avi file")
 
             if st.button("🔊 Test Audible Siren Now", help="Triggers a short synthetic security siren in your browser"):
                 trigger_audio_siren("breach")
@@ -613,12 +620,20 @@ with col_cam_view:
     with ctrl4:
         conf_slider = st.slider("YOLO Conf:", min_value=0.20, max_value=0.90, value=CONFIDENCE_THRESHOLD, step=0.05)
 
+    # Resolve active camera / video source
+    if video_source_type.startswith("Webcam"):
+        active_source = 0
+    elif "Demo" in video_source_type:
+        active_source = "assets/sample_surveillance.mp4"
+    else:
+        active_source = custom_video_path
+
     # Handle manual instant photo capture safely
     if capture_btn:
         with st.spinner("Capturing instant photo from camera..."):
-            temp_cam = CameraStream(source=0)
+            temp_cam = CameraStream(source=active_source)
             if temp_cam.start():
-                time.sleep(0.2)
+                time.sleep(0.15)
                 ret, frame = temp_cam.read_frame()
                 temp_cam.release()
                 if ret and frame is not None:
@@ -632,7 +647,10 @@ with col_cam_view:
                 else:
                     st.warning("Camera opened, but failed to capture a frame.")
             else:
-                st.error("Camera is currently in use or unavailable.")
+                if str(active_source) == "0":
+                    st.warning("🌐 **Cloud Notice:** Physical USB webcam is unavailable on remote cloud servers. Switch Video Source to **'Demo Security Footage'** or **'RTSP'** above to test capturing.")
+                else:
+                    st.error(f"Camera source '{active_source}' is currently unavailable.")
 
     status_bar = st.empty()
 
@@ -651,7 +669,6 @@ with col_cam_view:
             cam4_box = st.empty()
 
     if live_feed_active:
-        active_source = 0 if video_source_type.startswith("Webcam") else custom_video_path
         camera = CameraStream(source=active_source)
         selected_model_path = "models/ppe_yolov8n.pt" if "PPE Safety" in model_task and Path("models/ppe_yolov8n.pt").exists() else "models/yolov8n.pt"
         tracker = ObjectTracker(model_path=selected_model_path, conf_threshold=conf_slider)
@@ -670,7 +687,14 @@ with col_cam_view:
         )
 
         if not camera.start():
-            status_bar.error(f"Unable to open video source: '{active_source}'. Check if another app is using the webcam.")
+            if str(active_source) == "0":
+                status_bar.warning(
+                    "🌐 **Cloud Server Environment Detected:** Streamlit Cloud runs on a remote server in a datacenter with no physical USB webcam attached. "
+                    "To test live surveillance here: in **⚙️ Intelligent Security Rules ➔ Video Source**, select **'Demo Security Footage'** or **'RTSP IP Security Camera'**, "
+                    "or test pre-recorded files in the **'📁 Upload & Monitor Video'** tab below. (To monitor your laptop's personal USB webcam, run VisionGuard locally on your PC)."
+                )
+            else:
+                status_bar.error(f"Unable to open video source: '{active_source}'. Check stream URL or file path.")
         else:
             status_bar.success(f"🟢 Connected to {DEFAULT_CAMERA_ID} | Running YOLOv8 + ByteTrack + Surveillance Engine")
 
