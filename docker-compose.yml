@@ -1,0 +1,37 @@
+services:
+  visionguard:
+    build: .
+    container_name: visionguard-app
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/
+      - MONGODB_DATABASE=VisionGuardAI
+      - DEFAULT_CAMERA_ID=CAM_01
+    volumes:
+      - ./data/snapshots:/app/data/snapshots
+      - ./models:/app/models
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  mongo:
+    image: mongo:6.0
+    container_name: visionguard-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  mongodb_data:
+    driver: local
+

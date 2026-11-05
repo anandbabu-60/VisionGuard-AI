@@ -1,0 +1,14 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+data/snapshots/*
+data/*.mp4
+data/*.db
+data/*test_frame*.jpg
+.git
+.gitignore
+README.md
+

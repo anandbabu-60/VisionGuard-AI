@@ -1,0 +1,13 @@
+# VisionGuard AI - PPE & Safety Gear Dataset Configuration
+path: D:/VisionGuard-AI/data/ppe_dataset
+train: images/train
+val: images/val
+test: images/test
+
+# PPE Classes
+names:
+  0: hard_hat
+  1: safety_vest
+  2: no_hard_hat
+  3: no_safety_vest
+  4: person

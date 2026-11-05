@@ -1,0 +1,32 @@
+# Python virtual environment
+venv/
+.venv/
+env/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Environment files
+.env
+.env.local
+
+# Databases & Backups
+*.db
+*.sqlite3
+
+# Models cache (weights downloaded at runtime)
+# models/*.pt
+
+# Temporary logs & task dumps
+*.log
+
+# Large surveillance media files
+data/*.mp4
+data/*.avi
+data/*.mov
+data/snapshots/*.jpg
+!data/snapshots/.gitkeep
+
